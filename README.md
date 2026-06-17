@@ -92,12 +92,12 @@ k-means-clustering/
 
 목표: 제공된 IEEE754 FPU 모듈의 사용법을 익히고, 사칙연산 제어 로직(`fpu_top.v`)의 최소 동작을 검증한다.
 
-- [ ] **T1.1** `fpu_adder.v` / `fpu_multiplier.v` / `fpu_divider.v` 의 handshake 프로토콜 분석
-- [ ] **T1.2** `fpu_top.v` 작성 — 입력 `clk, rstnn, var_x, var_y, request_fadd/fsub/fmult/fdiv` (8개),
-      출력 `var_z` (1개). adder/mult/divider는 **각각 1개씩만** 인스턴스(중복 인스턴스 금지).
-      **뺄셈(fsub)도 직접 구현**해야 한다 (testbench에서 음수를 넣는 방식 금지).
-- [ ] **T1.3** `testbench.v` 작성 — request 신호에 따라 사칙연산 결과 z를 생성하는지 자극(stimulus) 인가
-- [ ] **T1.4** Questa/Vivado로 RTL 시뮬레이션 수행. 파형의 `var_x/var_y/var_z` 는 Radix를 **float32**로 설정해 확인
+- [x] **T1.1** `fpu_adder.v` / `fpu_multiplier.v` / `fpu_divider.v` 의 handshake(stb/ack FSM) 프로토콜 분석
+- [x] **T1.2** `fpu_top.v` 작성 — 입력 `clk, rstnn, var_x, var_y, request_fadd/fsub/fmult/fdiv` (8개),
+      출력 `var_z` (1개). adder/mult/divider **각 1개씩** 인스턴스. **fsub는 b 부호비트 반전**으로 구현(`x-y=x+(-y)`).
+- [x] **T1.3** `hardware/sim/tb_fpu_top.v` 작성 — request별 사칙연산 결과를 IEEE754 기대값과 비교
+- [x] **T1.4** **iverilog 로컬 검증 통과** (`./hardware/sim/run.sh`): fadd/fsub/fmult/fdiv 4종 모두 PASS
+      (x=14.53, y=87.91 → 102.44 / -73.38 / 1277.33 / 0.165283). RVX/Questa 파형은 Radix `float32`로 확인.
 - [ ] **T1.5** (제출) 보고서: `fpu_top.v`, `testbench` 코드, 시뮬레이션 결과 캡쳐 + 코드/결과 설명
 
 **검증되는 것**: FPU Adder/Multiplier/Divider 사용법, 사칙연산 제어 로직의 최소 동작.
@@ -193,6 +193,6 @@ make imp                                   # 합성+구현+bitstream(.bit)  ← 
 ## 6. 진행 현황
 
 - [x] 프로젝트 자료(스켈레톤) 확보: FPU 모듈, `IP_TOP.v` 스켈레톤, 테스트/응용 앱, 데이터
-- [ ] Phase 1 — `fpu_top.v` / `testbench.v` 작성 및 RTL 시뮬레이션
-- [ ] Phase 2 — `IP_TOP.v` 완성 및 `fpu_test.c` 검증 (RTL + FPGA)
+- [x] Phase 1 — `fpu_top.v` / `tb_fpu_top.v` 작성, **iverilog 로컬 검증 통과** (RVX RTL 시뮬은 추후)
+- [ ] Phase 2 — `IP_TOP.v` 완성 및 `fpu_test.c` 검증 (RVX RTL + FPGA)
 - [ ] Phase 3 — `k_means_oled.c` FPU API 적용 및 가속 효과 측정
