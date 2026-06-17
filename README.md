@@ -25,30 +25,30 @@
 
 ## 2. 디렉터리 구조
 
+이 저장소는 **source-of-truth**이고, RVX 빌드 시에는 아래 파일을 RVX 플랫폼의
+`user/rtl/src`, `user/sw/src`로 **복사(또는 심볼릭 링크)**해서 사용한다. constraint·testbench·sim
+환경은 **RVX가 자동 생성**하므로 저장소에 따로 두지 않는다.
+
 ```
 k-means-clustering/
 ├── documents/                     # 프로젝트/제출물 안내 PDF
-│   ├── K-means clustering프로젝트.pdf
-│   └── K-means clustering프로젝트_제출물안내.pdf
-├── kmeans_fpu.xml                 # RVX 플랫폼 명세 (수정 X)
-├── hardware/                      # RTL (Verilog)
-│   ├── src/                       # 합성 대상 RTL 소스
+├── kmeans_fpu.xml                 # RVX 플랫폼 명세 (→ platform 의 tip_xxx.xml)
+├── hardware/
+│   ├── src/                       # RTL 소스 → RVX의 user/rtl/src 로 복사
 │   │   ├── fpu_adder.v            # IEEE754 가산기   (수정 X)
 │   │   ├── fpu_multiplier.v       # IEEE754 곱셈기   (수정 X)
 │   │   ├── fpu_divider.v          # IEEE754 나눗셈기 (수정 X)
 │   │   ├── IP_TOP.v               # APB 슬레이브 IP top — 빈칸 채워서 완성 (Step 2)
 │   │   └── fpu_top.v              # (신규 작성, Step 1) FPU 사칙연산 제어 top
-│   ├── testbench/                 # Vivado 시뮬레이션용 testbench
-│   ├── sim/                       # iverilog 시뮬레이션 (스크립트/결과)
-│   └── constraints/               # FPGA 제약 파일 (.xdc)
-└── software/                      # C 소스 (RVX 앱)
+│   └── sim/                       # iverilog 로컬 검증용 testbench + run 스크립트 (Step 1)
+└── software/                      # C 소스 → RVX의 user/sw/src 로 복사
     ├── fpu_test.c                 # Step 2 사칙연산 테스트 앱 (수정 X)
     ├── k_means_oled.c             # K-means clustering 응용 (Step 3에서 수정)
     └── data_150.h                 # 입력 데이터 data[150][2]
 ```
 
-> **아직 생성되지 않은 파일**: `hardware/src/fpu_top.v`(Step 1), `hardware/testbench/`의 testbench 는 직접 작성해야 한다.
-> `hardware/{constraints,sim,testbench}` 는 현재 비어 있어 `.gitkeep`으로 자리만 잡아 두었다.
+> **아직 생성되지 않은 파일**: `hardware/src/fpu_top.v`(Step 1), `hardware/sim/`의 testbench 는 직접 작성해야 한다.
+> constraint/testbench/sim 환경은 RVX의 `make syn`/`make testbench`/`make sim_rtl`이 생성하므로 별도 폴더를 두지 않는다.
 
 ### FPU 모듈 인터페이스 (수정 금지)
 
@@ -145,14 +145,36 @@ k-means-clustering/
 
 ---
 
-## 4. 빌드 / 실행 환경
+## 4. 빌드 / 실행 환경 (RVX)
 
-- **플랫폼**: RVX 프레임워크 (메인 코어 `rvc_orca`, 사용자 IP `user_slaveif_apb_clkin`)
-- **RTL 시뮬레이션**: Questa 또는 Vivado (파형 Radix `float32` 권장)
-- **FPGA 프로토타이핑**: Arty A7 보드 + **Pmod OLED RGB** (포트 `JA`)
-- **앱 통신**: UART / PuTTY (실행 결과 확인)
+**RVX (RISC-V eXpress, ETRI)** 는 클라이언트–서버 구조의 SoC 개발 키트다.
+학생은 special IP(`IP_TOP.v` + `fpu_top.v`)만 설계하고, ORCA 코어·APB 버스·NoC·OLED·UART 등
+나머지 SoC와 **합성/구현은 RVX가 자동 처리**한다. 무거운 빌드는 **RVX 서버에서 SSH로 원격 실행**되므로
+**로컬에 Vivado가 필요 없다** (`rvx_devkit.make_at_server` → `request_ssh`).
 
-> 빌드 스크립트/플랫폼 생성 절차는 RVX 환경(과제 안내 자료)을 따른다. 본 저장소는 RTL/앱 소스만 포함한다.
+- **RVX Mini**: Linux(Debian/Ubuntu) 및 Windows 지원. 서버와 연동되는 최소 클라이언트.
+  - 서버: `cau01.rvx.coreicc.net` / 포트 `2022` (계정·비밀번호는 강의 배부)
+- **플랫폼 spec**: `kmeans_fpu.xml` (메인 코어 ORCA, 사용자 IP `user_slaveif_apb_clkin`)
+- **FPGA 프로토타이핑**: Arty A7-50 + **Pmod OLED RGB**, OLIMEX ARM-USB-TINY-H JTAG
+- **앱 통신**: UART / PuTTY (`make printf`)
+- **로컬 기능 검증(Step 1)**: 이 저장소에서는 **iverilog/vvp**로 `fpu_top` 사칙연산을 사전 검증 가능
+
+### RVX 빌드 흐름 (랩 PC 또는 RVX Mini 설치 환경)
+
+```
+make sync                                  # 서버 동기화
+cd platform; make new PLATFORM_NAME=tip_xxx   # 플랫폼 생성 + xml 작성 (kmeans_fpu.xml 기반)
+# → user/rtl/src 에 hardware/src/*.v, user/sw/src 에 software/*.c,*.h 복사
+make syn                                   # RTL 생성/합성 (서버)
+make testbench && make sim_rtl             # 시뮬 환경 생성
+make app_list && make <app>.sim            # RTL 시뮬레이션 (fpu_test / k_means)
+cd ..; make arty-50; cd imp_arty-50_*      # FPGA 구현 환경
+make imp                                   # 합성+구현+bitstream(.bit)  ← "플래시 직전" 종착점
+# make program                             # FPGA 플래시 (보드 필요)
+# make printf                              # PuTTY serial
+```
+
+> 저장소(이 repo)는 **user 소스(RTL/앱) + 플랫폼 xml**만 보유한다. RVX 빌드 시 `user/rtl/src`·`user/sw/src`로 복사/링크해 사용한다.
 
 ---
 
