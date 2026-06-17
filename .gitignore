@@ -1,0 +1,9 @@
+# EDA / 라이선스 / 빌드 산출물 (저장소에 커밋 금지)
+*.dat
+*.lic
+*License*
+# 시뮬레이션 산출물
+*.vcd
+*.wlf
+*.vvp
+sim_build/

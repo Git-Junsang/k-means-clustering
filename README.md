@@ -107,14 +107,14 @@ k-means-clustering/
 
 목표: `fpu_top`을 APB 슬레이브 IP(`IP_TOP.v`)에 통합하여 프로세서와 연결하고, 사칙연산 테스트 앱을 실행한다.
 
-- [ ] **T2.1** `IP_TOP.v` 의 빈칸(`Please fill in the relevant code here`) 작성
-  - `var_z` write 경로 (FPU 결과를 z에 반영)
-  - `fpu_top.v` 인스턴스화 및 `request_*` / `var_x,y,z` 연결 (이 단계에서 `fpu_top.v` 코드 수정 허용)
-  - **`rpready_set` 로직**: FPU 연산이 끝날 때까지 충분히 대기하도록 wait-state 생성.
-    AMBA **APB의 `pready`** 신호 개념 참고 ("연산 완료까지 `rpready=0` 유지").
-- [ ] **T2.2** 설계한 IP를 프로세서(`i_test1` 슬레이브)에 연결
-- [ ] **T2.3** `fpu_test.c` (수정 X) 실행 — x=14.53, y=87.91 에 대한 add/sub/mult/div 결과 확인
-- [ ] **T2.4** RTL 시뮬레이션 및 FPGA 프로토타이핑으로 동작 확인
+- [x] **T2.1** `IP_TOP.v` 의 빈칸 작성 완료
+  - `var_z` write 경로: `else if(fpu_done) var_z <= fpu_z;`
+  - `fpu_top` 인스턴스화 + busy/start-pulse FSM(레벨 request를 1-cycle pulse로 변환, 재트리거 방지 `op_serviced`). fpu_top에 `done` 출력 추가.
+  - **`rpready_set` 로직**: op 주소(0xC/0x10) 접근 중 `rpready=0`으로 wait-state, 연산 완료 시 `1`.
+- [x] **T2.1b** **iverilog APB-마스터 로컬 검증 통과** (`./hardware/sim/run_ip.sh`): set_x/set_y→op→get_z 시퀀스로 fadd/fsub/fmult/fdiv + 레지스터 readback 전부 PASS
+- [ ] **T2.2** 설계한 IP를 프로세서(`i_test1` 슬레이브)에 연결 (RVX `make syn`)
+- [ ] **T2.3** `fpu_test.c` (수정 X) 실행 — RVX RTL sim / FPGA
+- [ ] **T2.4** RVX RTL 시뮬레이션 및 FPGA 프로토타이핑으로 동작 확인
 - [ ] **T2.5** (제출) 보고서: 작성한 `IP_TOP.v` 부분, PuTTY 실행결과 캡쳐,
       (가능 시) FPGA 보드+PuTTY+이름/학번 사진. FPGA 미완료 시 RTL 결과창(cmd/wave) 캡쳐
 

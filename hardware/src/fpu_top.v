@@ -25,7 +25,8 @@ module fpu_top
     input  wire        request_fmult,
     input  wire        request_fdiv,
 
-    output reg  [31:0] var_z
+    output reg  [31:0] var_z,
+    output reg         done       // 1-cycle pulse when var_z holds a new result
 );
 
     // ------------------------------------------------------------------
@@ -102,8 +103,10 @@ module fpu_top
             a_done <= 1'b0;
             b_done <= 1'b0;
             var_z  <= 32'd0;
+            done   <= 1'b0;
         end
         else begin
+            done <= 1'b0;                     // default: deassert each cycle
             case (state)
                 S_IDLE: begin
                     a_done <= 1'b0;
@@ -128,6 +131,7 @@ module fpu_top
                     if (sel_b_ack) b_done <= 1'b1;   // input b accepted
                     if (sel_z_stb) begin             // result ready
                         var_z <= sel_z;
+                        done  <= 1'b1;               // pulse: new result latched
                         state <= S_IDLE;
                     end
                 end
