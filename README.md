@@ -30,20 +30,25 @@ k-means-clustering/
 ├── documents/                     # 프로젝트/제출물 안내 PDF
 │   ├── K-means clustering프로젝트.pdf
 │   └── K-means clustering프로젝트_제출물안내.pdf
-└── kmeans_fpu/
-    ├── kmeans_fpu.xml             # RVX 플랫폼 명세 (수정 X)
-    ├── rtl/
-    │   ├── fpu_adder.v            # IEEE754 가산기   (수정 X)
-    │   ├── fpu_multiplier.v       # IEEE754 곱셈기   (수정 X)
-    │   ├── fpu_divider.v          # IEEE754 나눗셈기 (수정 X)
-    │   └── IP_TOP.v               # APB 슬레이브 IP top — 빈칸 채워서 완성 (Step 2)
-    └── app/
-        ├── fpu_test.c             # Step 2 사칙연산 테스트 앱 (수정 X)
-        ├── k_means_oled.c         # K-means clustering 응용 (Step 3에서 수정)
-        └── data_150.h             # 입력 데이터 data[150][2]
+├── kmeans_fpu.xml                 # RVX 플랫폼 명세 (수정 X)
+├── hardware/                      # RTL (Verilog)
+│   ├── src/                       # 합성 대상 RTL 소스
+│   │   ├── fpu_adder.v            # IEEE754 가산기   (수정 X)
+│   │   ├── fpu_multiplier.v       # IEEE754 곱셈기   (수정 X)
+│   │   ├── fpu_divider.v          # IEEE754 나눗셈기 (수정 X)
+│   │   ├── IP_TOP.v               # APB 슬레이브 IP top — 빈칸 채워서 완성 (Step 2)
+│   │   └── fpu_top.v              # (신규 작성, Step 1) FPU 사칙연산 제어 top
+│   ├── testbench/                 # Vivado 시뮬레이션용 testbench
+│   ├── sim/                       # iverilog 시뮬레이션 (스크립트/결과)
+│   └── constraints/               # FPGA 제약 파일 (.xdc)
+└── software/                      # C 소스 (RVX 앱)
+    ├── fpu_test.c                 # Step 2 사칙연산 테스트 앱 (수정 X)
+    ├── k_means_oled.c             # K-means clustering 응용 (Step 3에서 수정)
+    └── data_150.h                 # 입력 데이터 data[150][2]
 ```
 
-> **아직 생성되지 않은 파일**: `rtl/fpu_top.v`, `rtl/testbench.v` 는 Step 1에서 직접 작성해야 한다.
+> **아직 생성되지 않은 파일**: `hardware/src/fpu_top.v`(Step 1), `hardware/testbench/`의 testbench 는 직접 작성해야 한다.
+> `hardware/{constraints,sim,testbench}` 는 현재 비어 있어 `.gitkeep`으로 자리만 잡아 두었다.
 
 ### FPU 모듈 인터페이스 (수정 금지)
 
@@ -132,11 +137,11 @@ k-means-clustering/
 
 **앱 파라미터** (`k_means_oled.c` 상단):
 
-| 파라미터 | 의미 | RTL 권장 | FPGA |
-|----------|------|----------|------|
-| `num_data` | 입력 데이터 수 (0~150) | 5 (sim 약 5분) | 100 |
-| `use_oled` | OLED 출력 활성화 | 0 (sim 불가) | 0 또는 1 |
-| `full_printf` | 전체 printf 출력 | 0 (sim에서 느림) | 0 또는 1 |
+| 파라미터　　　| 의미　　　　　　　　　 | RTL 권장　　　　 | FPGA　　 |
+| ---------------| ------------------------| ------------------| ----------|
+| `num_data`　　| 입력 데이터 수 (0~150) | 5 (sim 약 5분)　 | 100　　　|
+| `use_oled`　　| OLED 출력 활성화　　　 | 0 (sim 불가)　　 | 0 또는 1 |
+| `full_printf` | 전체 printf 출력　　　 | 0 (sim에서 느림) | 0 또는 1 |
 
 ---
 
@@ -155,11 +160,11 @@ k-means-clustering/
 
 각 단계마다 `[학번이름]stepN_보고서` 와 `[학번이름]stepN_코드.zip` 제출.
 
-| Step | 보고서 | 코드.zip |
-|------|--------|----------|
-| 1 | `fpu_top.v`/testbench 코드, 시뮬 결과 캡쳐 + 설명 | `testbench.v`, `fpu_top.v`, `fpu_adder/multiplier/divider.v` |
-| 2 | 작성한 `IP_TOP.v`, PuTTY 결과, FPGA 사진(이름/학번 포함) | `user/rtl/src` 전체 + 사용한 `fpu_test.c` |
-| 3 | API 대체 부분, PuTTY 결과, 가속 비교, FPGA 사진 | `user/rtl/src` 전체 + 수정한 `k_means_oled.c` |
+| Step | 보고서　　　　　　　　　　　　　　　　　　　　　　　　　 | 코드.zip　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| ------| ----------------------------------------------------------| --------------------------------------------------------------|
+| 1    | `fpu_top.v`/testbench 코드, 시뮬 결과 캡쳐 + 설명　　　　| `testbench.v`, `fpu_top.v`, `fpu_adder/multiplier/divider.v` |
+| 2    | 작성한 `IP_TOP.v`, PuTTY 결과, FPGA 사진(이름/학번 포함) | `user/rtl/src` 전체 + 사용한 `fpu_test.c`　　　　　　　　　　|
+| 3    | API 대체 부분, PuTTY 결과, 가속 비교, FPGA 사진　　　　　| `user/rtl/src` 전체 + 수정한 `k_means_oled.c`　　　　　　　　|
 
 ---
 
