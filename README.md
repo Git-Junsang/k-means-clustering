@@ -84,7 +84,7 @@ k-means-clustering/
 ## 3. 프로젝트 단계 (Phases & Tasks)
 
 전체 흐름: **Step 1 (FPU 동작 확인) → Step 2 (IP 설계) → Step 3 (실제 앱 적용)**.
-각 단계는 RTL Simulation으로 검증하고, Step 2~3은 FPGA(Arty A7 + Pmod OLED RGB) 프로토타이핑까지 진행한다.
+각 단계는 RTL Simulation으로 검증하고, Step 2~3은 FPGA(Arty S7 + Pmod OLED RGB) 프로토타이핑까지 진행한다.
 
 ### Phase 1 — FPU 모듈 동작 확인 (RTL Simulation)
 
@@ -153,7 +153,7 @@ k-means-clustering/
 - **RVX Mini**: Linux(Debian/Ubuntu) 및 Windows 지원. 서버와 연동되는 최소 클라이언트.
   - 서버: `cau01.rvx.coreicc.net` / 포트 `2022` (계정·비밀번호는 강의 배부)
 - **플랫폼 spec**: `kmeans_fpu.xml` (메인 코어 ORCA, 사용자 IP `user_slaveif_apb_clkin`)
-- **FPGA 프로토타이핑**: Arty A7-50 + **Pmod OLED RGB**, OLIMEX ARM-USB-TINY-H JTAG
+- **FPGA 프로토타이핑**: Arty S7-50 (Spartan-7 xc7s50csga324-1) + **Pmod OLED RGB**, OLIMEX ARM-USB-TINY-H JTAG
 - **앱 통신**: UART / PuTTY (`make printf`)
 - **로컬 기능 검증(Step 1)**: 이 저장소에서는 **iverilog/vvp**로 `fpu_top` 사칙연산을 사전 검증 가능
 

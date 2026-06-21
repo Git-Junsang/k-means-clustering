@@ -16,7 +16,7 @@ RVX 안에서 편집한 파일의 스냅샷이다.
   - `fpu_test` : Step 2 사칙연산 검증 앱
   - `k_means_oled` : Step 3 FPU API 적용 K-means (제출 대상, 저장소 `software/k_means_oled.c`와 동일 로직)
   - `k_means_base` : 가속 비교용 baseline(소프트웨어 float). 비교 측정 전용
-- `bitstream/kmeans_fpu_fpga.arty-50.bit` — Arty A7-50(xc7s50) 비트스트림 (`make imp` 산출물)
+- `bitstream/kmeans_fpu_fpga.arty-50.bit` — Arty S7-50(Spartan-7 xc7s50csga324-1) 비트스트림 (`make imp` 산출물)
 
 ## i_test1 (FPU IP) 레지스터 맵 — base `0xE2020000`
 
@@ -36,4 +36,4 @@ RVX 안에서 편집한 파일의 스냅샷이다.
 - **가속(profiling tick, full_printf=0, num_data=5)** clustering 루프: baseline 7057 → FPU 2880 (≈2.45×).
 - **FPGA 구현** `make imp` 성공: DRC 0 Errors, **Timing: Success**, Bitgen 성공(0 Critical Warnings).
 
-> FPGA 보드 동작 확인(`make program` → `make printf`)은 Arty A7-50 + OLIMEX JTAG 연결 시 진행.
+> FPGA 보드 동작 확인(`make program` → `make printf`)은 Arty S7-50 + OLIMEX JTAG 연결 시 진행.
