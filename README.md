@@ -1,7 +1,5 @@
 # K-means Clustering을 위한 FPU IP 설계
 
-중앙대학교 **디지털회로 및 시스템 설계** 과제 프로젝트 (이우주 교수님 연구실 / Low Power SoC Lab.)
-
 경량 정수형 RISC-V 코어(ORCA, RVX 플랫폼) 위에서 동작하는 K-means clustering 응용을
 **하드웨어 FPU(Floating Point Unit) IP**로 가속하는 프로젝트입니다.
 
@@ -193,6 +191,11 @@ make imp                                   # 합성+구현+bitstream(.bit)  ← 
 ## 6. 진행 현황
 
 - [x] 프로젝트 자료(스켈레톤) 확보: FPU 모듈, `IP_TOP.v` 스켈레톤, 테스트/응용 앱, 데이터
-- [x] Phase 1 — `fpu_top.v` / `tb_fpu_top.v` 작성, **iverilog 로컬 검증 통과** (RVX RTL 시뮬은 추후)
-- [ ] Phase 2 — `IP_TOP.v` 완성 및 `fpu_test.c` 검증 (RVX RTL + FPGA)
-- [ ] Phase 3 — `k_means_oled.c` FPU API 적용 및 가속 효과 측정
+- [x] Phase 1 — `fpu_top.v` / `tb_fpu_top.v` 작성, **iverilog + QuestaSim 로컬 검증 통과**
+- [x] Phase 2 (RTL) — `IP_TOP.v` 완성, `tb_ip_top.v`(APB 마스터) **iverilog + QuestaSim 로컬 검증 통과**
+- [ ] Phase 2 (RVX) — `make syn` / `fpu_test.c` RTL 시뮬 + FPGA  ← **RVX 설정된 Windows에서 진행**
+- [ ] Phase 3 — `k_means_oled.c` FPU API 적용 + 가속 효과 측정  ← Windows RVX에서 진행
+
+> **빌드/시뮬 환경**: 이후 RVX `make syn`/`sim_rtl`/`imp`/`program` 은 **RVX가 모두 설정된 Windows 환경**에서 수행한다.
+> 이 저장소의 `hardware/sim/run*.sh` 는 **로컬 RTL 기능 사전검증용**(iverilog/Questa)이며, RVX 빌드와는 독립이다.
+> RVX 빌드 시 `hardware/src/*.v` → `user/rtl/src`, `software/*` → `user/sw/src` 로 복사/링크.
