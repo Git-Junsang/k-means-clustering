@@ -6,7 +6,43 @@
 #include "ervp_core_id.h"
 #include "ervp_delay.h"
 #include "ervp_profiling.h"
+#include "ervp_reg_util.h"
 #include "oled_rgb.h"
+
+/* ---- FPU IP (i_test1, APB slave) register map ----
+ * 0x0 : x (W/R)   0x4 : y (W/R)   0x8 : z = result (W/R)
+ * 0xC : W=fadd(x+y)  R=fsub(x-y)
+ * 0x10: W=fmult(x*y) R=fdiv(x/y)
+ */
+#define OFFSET_X     0x0
+#define OFFSET_Y     0x4
+#define OFFSET_Z     0x8
+#define OFFSET_FADD  0xC
+#define OFFSET_FSUB  0xC
+#define OFFSET_FMULT 0x10
+#define OFFSET_FDIV  0x10
+
+#define REG32_fl(add) *((volatile float *)(add))
+
+static inline unsigned int get_test1_addr(unsigned int offset)
+{
+	return (I_TEST1_SLAVE_BASEADDR + offset);
+}
+
+static inline void  set_x(float value) { REG32_fl(get_test1_addr(OFFSET_X)) = value; }
+static inline void  set_y(float value) { REG32_fl(get_test1_addr(OFFSET_Y)) = value; }
+static inline float get_z(void)        { return REG32_fl(get_test1_addr(OFFSET_Z)); }
+
+static inline void perform_fadd(void)  { REG32(get_test1_addr(OFFSET_FADD)) = 0; }
+static inline void perform_fmult(void) { REG32(get_test1_addr(OFFSET_FMULT)) = 0; }
+static inline void perform_fsub(void)  { volatile int t = REG32(get_test1_addr(OFFSET_FSUB)); (void)t; }
+static inline void perform_fdiv(void)  { volatile int t = REG32(get_test1_addr(OFFSET_FDIV)); (void)t; }
+
+/* offload one floating-point operation to the FPU IP and read back z */
+static inline float fpu_add (float a, float b) { set_x(a); set_y(b); perform_fadd();  return get_z(); }
+static inline float fpu_sub (float a, float b) { set_x(a); set_y(b); perform_fsub();  return get_z(); }
+static inline float fpu_mult(float a, float b) { set_x(a); set_y(b); perform_fmult(); return get_z(); }
+static inline float fpu_div (float a, float b) { set_x(a); set_y(b); perform_fdiv();  return get_z(); }
 
 #define OLED_W 96
 #define OLED_H 64
@@ -95,7 +131,12 @@ int main()
 					float dis = 0;
 
 					for(int l = 0; l < 2; l++)
-						dis += sqr((float)data[i][l] - means[j][l]);
+					{
+						// dis += sqr((float)data[i][l] - means[j][l]); offloaded to FPU
+						float diff = fpu_sub((float)data[i][l], means[j][l]); // fsub
+						float sq   = fpu_mult(diff, diff);                    // fmult
+						dis        = fpu_add(dis, sq);                        // fadd
+					}
 
 					if(dis < min_dis) {
 						min_dis = dis;
@@ -123,16 +164,19 @@ int main()
 			{
 				count[group[i]]++;
 				for(int j = 0; j < 2; j++)
-					temp[group[i]][j] += (float)data[i][j];
+					// temp[group[i]][j] += (float)data[i][j]; offloaded to FPU
+					temp[group[i]][j] = fpu_add(temp[group[i]][j], (float)data[i][j]); // fadd
 			}
 
 			for(int i = 0; i < k; i++)
 			{
 				for(int j = 0; j < 2; j++)
 				{
-					temp[i][j] /= count[i];
+					// temp[i][j] /= count[i]; offloaded to FPU
+					temp[i][j] = fpu_div(temp[i][j], (float)count[i]); // fdiv
 
-					if(ABS(temp[i][j] - means[i][j]) > 0.0001)
+					// ABS(temp[i][j] - means[i][j]) subtraction offloaded to FPU
+					if(ABS(fpu_sub(temp[i][j], means[i][j])) > 0.0001) // fsub
 					{
 						flag++;
 						means[i][j] = temp[i][j];
@@ -223,6 +267,7 @@ int main()
 				break;
 		}
 		profiling_end("K-means clustering");
+		profiling_print();		// report total tick of the clustering loop (FPU vs non-FPU 비교용)
 
 		if(full_printf) {
 			printf("\nEnd of K=means clustering! iteration : %d\n", iteration);
