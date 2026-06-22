@@ -41,6 +41,22 @@ def CODE(text):
         r.element.rPr.rFonts.set(qn('w:eastAsia'), 'Consolas')
     return p
 
+REPO = r'C:\k-means-clustering'
+def CODEFILE(path, start=None, end=None):
+    """Embed a source file (or a sub-range) as a code block. start/end = 1-based line number or a substring marker."""
+    try:
+        lines = open(path, encoding='utf-8').read().replace('\r','').split('\n')
+    except Exception as e:
+        CODE('(파일을 읽지 못함: %s)' % path); return
+    def idx(m, d):
+        if m is None: return d
+        if isinstance(m, int): return m-1
+        for i, l in enumerate(lines):
+            if m in l: return i
+        return d
+    s = idx(start, 0); e = idx(end, len(lines)-1)
+    CODE('\n'.join(lines[s:e+1]))
+
 def TABLE(headers, rows):
     t = doc.add_table(rows=1, cols=len(headers))
     t.style = 'Table Grid'
@@ -108,6 +124,10 @@ for s in [
 ]:
     b=doc.add_paragraph(style='List Bullet'); rr=b.add_run(s)
     rr.font.name='Malgun Gothic'; rr.font.size=Pt(10); rr.element.rPr.rFonts.set(qn('w:eastAsia'),'Malgun Gothic')
+H('1.2.1 fpu_top.v 전체 코드', 3)
+CODEFILE(REPO + r'\hardware\src\fpu_top.v')
+H('1.2.2 testbench (tb_fpu_top.v) 코드', 3)
+CODEFILE(REPO + r'\hardware\sim\tb_fpu_top.v')
 H('1.3 검증 결과 (로컬 iverilog)', 2)
 P('입력 x=14.53(0x41687AE1), y=87.91(0x42AFD1EC) 기준, 4종 연산이 IEEE-754 기대값과 일치:')
 TABLE(['연산','결과(float)','hex'],
@@ -139,9 +159,16 @@ P('② fpu_top 인스턴스 + 시작펄스/Busy FSM — 레벨로 유지되는 r
 P('③ rpready_set wait-state — 연산 주소(0xC/0x10) 접근 중 결과 전까지 rpready=0으로 wait-state, 완료 시 1.', bold=True)
 CODE('if(rpsel && op_addr && !op_serviced) rpready_set <= 0; // 연산중 -> wait\n'
      'else                                 rpready_set <= 1; // 정상/완료')
+P('아래는 IP_TOP.v에서 작성한(빈칸을 채운) 부분이다. (0xC/0x10 연산 요청 디코드는 스켈레톤의 case문에서 처리됨)', italic=True)
+H('① FPU 연동 신호 선언', 3); CODEFILE(REPO + r'\hardware\src\IP_TOP.v', 47, 60)
+H('② var_z에 FPU 결과 반영 (fpu_done 시 적재)', 3); CODEFILE(REPO + r'\hardware\src\IP_TOP.v', 135, 143)
+H('③ start-pulse/busy FSM + fpu_top 인스턴스', 3); CODEFILE(REPO + r'\hardware\src\IP_TOP.v', 147, 196)
+H('④ rpready wait-state', 3); CODEFILE(REPO + r'\hardware\src\IP_TOP.v', 200, 207)
 H('2.3 SoC 연결 (글루코드)', 2)
 P('RVX make syn이 생성한 user/rtl/include/kmeans_fpu_user_region.vh의 주석 템플릿을 IP_TOP(i_test1) 인스턴스로 '
   '연결하여 uNoC(APB)와 special IP를 결선. i_test1 슬레이브 base = 0xE2020000.')
+H('글루코드 — kmeans_fpu_user_region.vh (i_test1 = IP_TOP 인스턴스)', 3)
+CODEFILE(REPO + r'\rvx_generated\kmeans_fpu\user\rtl\include\kmeans_fpu_user_region.vh', 'IP_TOP', ');')
 H('2.4 검증 결과 — RTL Simulation', 2)
 P('입력 x=14.53, y=87.91 → fadd 102.44 / fsub -73.38 / fmult 1277.33 / fdiv 0.17(%.2f). Errors 0.')
 CAPTURE('[캡쳐 ②] fpu_test RTL 시뮬레이션 콘솔 ([SIM@RTL])')
@@ -185,6 +212,20 @@ for s in [
     b=doc.add_paragraph(style='List Bullet'); rr=b.add_run(s)
     rr.font.name='Malgun Gothic'; rr.font.size=Pt(10); rr.element.rPr.rFonts.set(qn('w:eastAsia'),'Malgun Gothic')
 P('또한 profiling_start/end("K-means clustering") 구간 뒤에 profiling_print()를 추가해 clustering 루프의 total tick을 출력.')
+H('3.3.1 FPU API 정의 (k_means_oled.c 추가분)', 3)
+CODEFILE(REPO + r'\software\k_means_oled.c', '/* ---- FPU IP (i_test1', 'static inline float fpu_div')
+H('3.3.2 API로 대체한 실수 연산 4곳', 3)
+CODE('// (1) 거리 계산 sqr((float)data - means) : fsub -> fmult -> fadd\n'
+     'for(int l = 0; l < 2; l++)\n{\n'
+     '    float diff = fpu_sub((float)data[i][l], means[j][l]); // fsub\n'
+     '    float sq   = fpu_mult(diff, diff);                    // fmult\n'
+     '    dis        = fpu_add(dis, sq);                        // fadd\n}')
+CODE('// (2) 새 mean 누적 temp += data : fadd\n'
+     'temp[group[i]][j] = fpu_add(temp[group[i]][j], (float)data[i][j]);')
+CODE('// (3) 평균 temp /= count : fdiv\n'
+     'temp[i][j] = fpu_div(temp[i][j], (float)count[i]);')
+CODE('// (4) 수렴 판정 ABS(temp - means) 의 뺄셈 : fsub\n'
+     'if(ABS(fpu_sub(temp[i][j], means[i][j])) > 0.0001)')
 H('3.4 결과 (1) — 군집 결과가 소프트웨어와 동일 (RTL Sim, num_data=5)', 2)
 TABLE(['항목','소프트웨어(float)','FPU IP 적용'],
       [['means[0]','(76.50, 16.00)','(76.50, 16.00)'],
