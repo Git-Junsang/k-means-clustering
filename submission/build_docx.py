@@ -89,6 +89,9 @@ H('K-means clustering을 위한 FPU IP 설계 — 보고서', 0)
 P('학번/이름: __________ (작성 필요)')
 P('플랫폼: RVX kmeans_fpu / FPGA: Arty S7-50 (Spartan-7 xc7s50csga324-1) + Pmod OLED RGB + OLIMEX ARM-USB-TINY-H JTAG')
 P('각 [캡쳐 N] 박스에 직접 이미지를 붙여넣고, 그 아래 "캡쳐 방법"대로 진행한다.', italic=True)
+P('RTL 시뮬 콘솔/파형 캡쳐 절차는 RVX 사용법(documents 디지털회로및시스템설계 Ch12)에 그림과 함께 정리되어 있다. '
+  '요약: 콘솔 결과 = make <app>, 파형 = make <app>.debug_view (QuestaSim) → i_platform 에서 i_test1 우클릭 '
+  '→ Add Wave → 신호 우클릭 → Radix → float32 → Zoom Full(f).', italic=True)
 
 # ===================== STEP 1 =====================
 H('Step 1 — FPU 모듈 동작 확인 (RTL Simulation)', 1)
@@ -116,8 +119,10 @@ CAPTURE('[캡쳐 ①] fpu_top 시뮬레이션 콘솔 결과')
 HOW(['Git Bash에서: cd /c/k-means-clustering',
      'bash hardware/sim/run.sh',
      '→ 콘솔에 fadd/fsub/fmult/fdiv ... PASS 출력. 콘솔 창 전체를 캡쳐.'])
-CAPTURE('[캡쳐 ①-2] (선택) 파형 캡쳐', height_cm=4.0)
-HOW(['QuestaSim/GTKWave에서 var_x, var_y, var_z, done 추가 후 radix를 float32로 변경하여 파형 캡쳐 (선택).'])
+CAPTURE('[캡쳐 ①-2] (선택) fpu_top 파형 캡쳐', height_cm=4.0)
+HOW(['Step 1은 SoC와 무관한 standalone 검증이므로 로컬 시뮬 파형을 사용.',
+     'QuestaSim(또는 iverilog $dumpvars로 만든 VCD를 GTKWave)에서 var_x, var_y, var_z, done 추가 후 radix를 float32로 변경하여 캡쳐.',
+     '(RVX debug_view는 SoC 통합 단계인 Step 2/3에서 사용)'])
 
 # ===================== STEP 2 =====================
 H('Step 2 — FPU IP 설계 + fpu_test (RTL Sim → FPGA)', 1)
@@ -142,6 +147,12 @@ CAPTURE('[캡쳐 ②] fpu_test RTL 시뮬레이션 콘솔 ([SIM@RTL])')
 HOW(['cmd에서: cd C:\\rvx_lec_hw\\platform\\kmeans_fpu\\sim_rtl',
      'make fpu_test',
      '→ 출력 끝의 [SIM@RTL] 블록(x : 14.53 ... fdiv : 0.17)을 캡쳐.'])
+CAPTURE('[캡쳐 ②-2] fpu_test 파형 (QuestaSim, RVX debug_view)')
+HOW(['RVX 사용법(Ch12)에 나온 절차. cmd에서: cd C:\\rvx_lec_hw\\platform\\kmeans_fpu\\sim_rtl',
+     'make fpu_test.debug_view  (QuestaSim GUI가 뜸, 수 분 소요)',
+     'i_platform + 펼치기 → i_test1 우클릭 → Add Wave → var_x/var_y/var_z(또는 rprdata) 선택',
+     '선택 신호 우클릭 → Radix → float32 → Zoom Full(f) 후 파형 캡쳐 (값 14.53/87.91/102.44…이면 정상)',
+     '※ debug_view 중 일시 오류 시 명령을 2~3회 재입력하면 진행됨(Ch12 안내).'])
 H('2.5 검증 결과 — FPGA (Arty S7-50)', 2)
 P('보드 실측 UART(COM5, 115200). 저장본: rvx_generated/kmeans_fpu/fpga_uart/fpu_test.uart.log')
 CODE('[EMU@FPGA]\nx : 14.53\ny : 87.91\nz : 670.72\nfadd : 102.44\nfsub : -73.38\nfmult : 1277.33\nfdiv : 0.17')
@@ -194,6 +205,10 @@ P('→ 약 2.45배 가속 (가속 정도 자체는 평가 대상 아님).')
 CAPTURE('[캡쳐 ⑥] RTL 시뮬 — tick 비교 ([section] K-means clustering total tick)')
 HOW(['두 앱 src/main.c에서 #define full_printf 0 으로 바꾼 뒤 위와 동일하게 make k_means_oled / make k_means_base 실행',
      '→ 각 출력의 [section] K-means clustering / total tick (2880, 7057)을 캡쳐.'])
+CAPTURE('[캡쳐 ⑥-2] (선택) k_means_oled 파형 (QuestaSim, RVX debug_view)', height_cm=4.0)
+HOW(['[캡쳐 ②-2]와 동일 절차로 make k_means_oled.debug_view 실행 후',
+     'i_test1의 var_x/var_y/var_z를 Add Wave → Radix float32 → Zoom Full(f)로 캡쳐.',
+     '(거리계산/평균에서 FPU 연산이 연속 호출되는 모습 확인 — 없어도 무방)'])
 H('3.6 결과 (3) — FPGA 실측 (Arty S7-50, num_data=100)', 2)
 P('실데이터 100점에 대해 FPU IP로 군집화가 정상 동작, 3 iterations만에 수렴. '
   '저장본: rvx_generated/kmeans_fpu/fpga_uart/k_means_oled.uart.log')
@@ -219,6 +234,7 @@ for s in [
     b=doc.add_paragraph(style='List Bullet'); rr=b.add_run(s)
     rr.font.name='Malgun Gothic'; rr.font.size=Pt(10); rr.element.rPr.rFonts.set(qn('w:eastAsia'),'Malgun Gothic')
 
-out = r'C:\k-means-clustering\submission\보고서.docx'
+import sys
+out = sys.argv[1] if len(sys.argv) > 1 else r'C:\k-means-clustering\submission\보고서.docx'
 doc.save(out)
 print('saved:', out)
