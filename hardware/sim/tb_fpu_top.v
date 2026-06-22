@@ -92,6 +92,7 @@ module tb_fpu_top;
         $display("=== DONE : %0d error(s) ===", errors);
         if (errors == 0) $display("RESULT: ALL TESTS PASSED");
         else             $display("RESULT: %0d TEST(S) FAILED", errors);
+        repeat (100) @(posedge clk);   // hold last result (fdiv = 0.1653) so it stays visible in the waveform
         $finish;
     end
 
