@@ -10,3 +10,10 @@ sim_build/
 
 # Word/Office 임시 락파일
 ~$*
+
+# RTL sim 잔여물 (QuestaSim/iverilog)
+hardware/sim/work/
+hardware/sim/transcript
+*.wlf
+modelsim.ini
+*.tmp
