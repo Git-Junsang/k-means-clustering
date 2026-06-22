@@ -116,9 +116,10 @@ TABLE(['연산','결과(float)','hex'],
        ['fmult (x*y)','1277.33','0x449FAAA2'],
        ['fdiv (x/y)','0.165283','0x3E293FDC']])
 CAPTURE('[캡쳐 ①] fpu_top 시뮬레이션 콘솔 결과')
-HOW(['Git Bash에서: cd /c/k-means-clustering',
-     'bash hardware/sim/run.sh',
-     '→ 콘솔에 fadd/fsub/fmult/fdiv ... PASS 출력. 콘솔 창 전체를 캡쳐.'])
+HOW(['VSCode PowerShell 터미널에서: cd C:\\k-means-clustering',
+     '.\\hardware\\sim\\run.ps1',
+     '→ [PASS] fadd/fsub/fmult/fdiv ... 와 RESULT: ALL TESTS PASSED 출력. 콘솔 전체 캡쳐.',
+     '주의: bash hardware/sim/run.sh 는 WSL bash에서 깨짐(iverilog 없음+CRLF). PowerShell run.ps1 사용(또는 Git Bash).'])
 CAPTURE('[캡쳐 ①-2] (선택) fpu_top 파형 캡쳐', height_cm=4.0)
 HOW(['Step 1은 SoC와 무관한 standalone 검증이므로 로컬 시뮬 파형을 사용.',
      'QuestaSim(또는 iverilog $dumpvars로 만든 VCD를 GTKWave)에서 var_x, var_y, var_z, done 추가 후 radix를 float32로 변경하여 캡쳐.',

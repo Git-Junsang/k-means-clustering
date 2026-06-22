@@ -7,3 +7,6 @@
 *.wlf
 *.vvp
 sim_build/
+
+# Word/Office 임시 락파일
+~$*
