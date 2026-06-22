@@ -1,0 +1,59 @@
+
+
+[EMU@FPGA]
+Start computing K-means algorithm : initial means
+means[0] = (77.00, 20.00)
+means[1] = (48.00, 39.00)
+means[2] = (52.00, 49.00)
+
+iteration = 1
+means[0] = (70.43, 18.23)
+means[1] = (22.44, 36.41)
+means[2] = (54.58, 49.85)
+
+iteration = 2
+means[0] = (70.43, 18.23)
+means[1] = (19.72, 35.90)
+means[2] = (54.08, 49.14)
+
+iteration = 3
+means[0] = (70.43, 18.23)
+means[1] = (19.72, 35.90)
+means[2] = (54.08, 49.14)
+
+
+[RVX/PROFILING/WARNING] includes printf time
+
+
+[section] main
+total tick 0<<0
+num_called 1
+total time (ms) 0.00
+average time (ms) 0.0000
+[RVX/PROFILING/WARNING] NOT accurate due to short running time
+
+[section] K-means clustering
+total tick 98389<<0
+num_called 1
+total time (ms) 98.39
+average time (ms) 98.3890
+End of K=means clustering! iteration : 3
+# of group 0 data : 35
+# of group 1 data : 29
+# of group 2 data : 36
+
+
+[RVX/PROFILING/WARNING] includes printf time
+
+
+[section] main
+total tick 161394<<0
+num_called 1
+total time (ms) 161.39
+average time (ms) 161.3940
+
+[section] K-means clustering
+total tick 98389<<0
+num_called 1
+total time (ms) 98.39
+average time (ms) 98.3890

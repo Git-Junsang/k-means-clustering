@@ -36,4 +36,13 @@ RVX 안에서 편집한 파일의 스냅샷이다.
 - **가속(profiling tick, full_printf=0, num_data=5)** clustering 루프: baseline 7057 → FPU 2880 (≈2.45×).
 - **FPGA 구현** `make imp` 성공: DRC 0 Errors, **Timing: Success**, Bitgen 성공(0 Critical Warnings).
 
-> FPGA 보드 동작 확인(`make program` → `make printf`)은 Arty S7-50 + OLIMEX JTAG 연결 시 진행.
+## FPGA 보드 실측 (Arty S7-50, 2026-06-23)
+
+`make program`(비트스트림 플래시, startup HIGH) → `make <app>.run`(OCD로 SRAM 적재·실행),
+UART는 COM5(115200)로 캡쳐. 원본 로그: `fpga_uart/*.uart.log`.
+
+- **Step 2 (fpu_test)** — `[EMU@FPGA]` x 14.53 / y 87.91 / z 670.72 / **fadd 102.44 / fsub −73.38 / fmult 1277.33 / fdiv 0.17**. RTL 시뮬과 동일.
+- **Step 3 (k_means_oled, num_data=100, full_printf=1)** — 100점 군집화가 **3 iterations**만에 수렴:
+  means (70.43,18.23)/(19.72,35.90)/(54.08,49.14), **group 35/29/36 (합 100)**. clustering tick 98389(printf 포함).
+
+> 가속의 정량 비교(소프트웨어 float 대비)는 RTL 시뮬의 full_printf=0 측정이 깔끔함: baseline 7057 → FPU 2880 (≈2.45×).

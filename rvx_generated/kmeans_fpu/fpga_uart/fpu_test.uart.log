@@ -1,0 +1,20 @@
+
+
+[EMU@FPGA]
+
+x : 14.53
+y : 87.91
+z : 670.72
+fadd : 102.44
+fsub : -73.38
+fmult : 1277.33
+fdiv : 0.17
+
+[RVX/PROFILING/WARNING] includes printf time
+
+
+[section] main
+total tick 12037<<0
+num_called 1
+total time (ms) 12.04
+average time (ms) 12.0370
