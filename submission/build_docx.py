@@ -189,13 +189,15 @@ CMD('cd C:\\rvx_lec_hw\\platform\\kmeans_fpu\\imp_arty-50_2026-06-21\nmake k_mea
 H('3.3 FPU 적용 전·후 가속효과 비교', 2)
 P('동일 조건(num_data=5, 루프 내 printf 제외)에서 clustering 루프의 profiling tick을 비교하면, 소프트웨어 float '
   '대비 FPU 적용 시 약 2.45배 단축되었다(가속 정도 자체는 평가 대상 아님).')
-TABLE(['구분','total tick','time(ms)'],
-      [['FPU 적용 전 (소프트웨어 float)','7057','7.06'],
-       ['FPU 적용 후 (FPU IP)','2880','2.88']])
+TABLE(['구분','측정 앱','total tick','time(ms)'],
+      [['FPU 적용 전 (소프트웨어 float)','k_means_base','7057','7.06'],
+       ['FPU 적용 후 (FPU IP)','k_means_fpu','2880','2.88']])
 CAPTURE('[캡쳐 5] 가속효과 비교 (profiling tick)')
-HOWP('두 앱의 main.c에서 full_printf를 0으로 둔 뒤 sim_rtl에서 make k_means_oled / make k_means_base 를 각각 '
-     '실행하면 [section] K-means clustering 의 total tick(2880, 7057)이 출력된다.')
-CMD('cd C:\\rvx_lec_hw\\platform\\kmeans_fpu\\sim_rtl\nmake k_means_oled\nmake k_means_base')
+P('측정 전용 앱 두 개(k_means_fpu, k_means_base)는 비교가 공정하도록 full_printf=0, num_data=5로 '
+  '미리 맞춰 두었다(편집 불필요). k_means_oled.c 자체는 수정하지 않는다.', italic=True)
+HOWP('sim_rtl에서 아래 두 명령을 실행하면 각 출력의 [section] K-means clustering 의 total tick이 나온다. '
+     'k_means_fpu = 2880(FPU 적용 후), k_means_base = 7057(적용 전 소프트웨어).')
+CMD('cd C:\\rvx_lec_hw\\platform\\kmeans_fpu\\sim_rtl\nmake k_means_fpu\nmake k_means_base')
 
 H('3.4 FPGA 보드 사진', 2)
 CAPTURE('[캡쳐 6] FPGA 보드 + PuTTY 창 + 메모장(이름/학번)', h_cm=6.0)
