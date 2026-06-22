@@ -141,9 +141,12 @@ HOW(['VSCode PowerShell 터미널에서: cd C:\\k-means-clustering',
      '→ [PASS] fadd/fsub/fmult/fdiv ... 와 RESULT: ALL TESTS PASSED 출력. 콘솔 전체 캡쳐.',
      '주의: bash hardware/sim/run.sh 는 WSL bash에서 깨짐(iverilog 없음+CRLF). PowerShell run.ps1 사용(또는 Git Bash).'])
 CAPTURE('[캡쳐 ①-2] (선택) fpu_top 파형 캡쳐', height_cm=4.0)
-HOW(['Step 1은 SoC와 무관한 standalone 검증이므로 로컬 시뮬 파형을 사용.',
-     'QuestaSim(또는 iverilog $dumpvars로 만든 VCD를 GTKWave)에서 var_x, var_y, var_z, done 추가 후 radix를 float32로 변경하여 캡쳐.',
-     '(RVX debug_view는 SoC 통합 단계인 Step 2/3에서 사용)'])
+HOW(['Step 1은 fpu_top 모듈 단독(standalone) 검증이라 RVX debug_view가 아니라 로컬 QuestaSim으로 파형을 뜬다.',
+     'cmd/PowerShell에서: cd C:\\k-means-clustering\\hardware\\sim',
+     'vsim -do wave_fpu_top.do',
+     '→ QuestaSim GUI에서 var_x/var_y/var_z가 float32 radix로, run+Zoom Full 된 파형이 표시됨. Wave 창 캡쳐.',
+     'var_z가 fadd 102.44 → fsub -73.38 → fmult 1277.33 → fdiv 0.1653 순으로 바뀜.',
+     '참고: GTKWave는 IEEE-754 float 표시가 기본 지원 안 됨 → 강의처럼 float로 보려면 QuestaSim 사용.'])
 
 # ===================== STEP 2 =====================
 H('Step 2 — FPU IP 설계 + fpu_test (RTL Sim → FPGA)', 1)
