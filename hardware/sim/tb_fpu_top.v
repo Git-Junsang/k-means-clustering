@@ -1,16 +1,6 @@
-// =====================================================================
-// tb_fpu_top.v  -  standalone testbench for fpu_top (Step 1, RTL sim)
-//
-//   Verifies fadd / fsub / fmult / fdiv with x = 14.53, y = 87.91
-//   (same operands as fpu_test.c).  Compares var_z against the expected
-//   IEEE-754 single-precision bit patterns.
-//
-//   Local run (iverilog):
-//     iverilog -o /tmp/fpu_sim hardware/src/fpu_adder.v \
-//        hardware/src/fpu_multiplier.v hardware/src/fpu_divider.v \
-//        hardware/src/fpu_top.v hardware/sim/tb_fpu_top.v
-//     vvp /tmp/fpu_sim
-// =====================================================================
+// tb_fpu_top.v : fpu_top 단독 테스트벤치 (Step 1)
+//   x=14.53, y=87.91 로 fadd/fsub/fmult/fdiv 를 시켜보고
+//   결과 var_z 를 IEEE-754 기대값과 비교한다.
 `timescale 1ns/1ps
 module tb_fpu_top;
 
@@ -21,15 +11,15 @@ module tb_fpu_top;
 
     integer     errors = 0;
 
-    // operands (IEEE-754 float32)
+    // 입력 (float32)
     localparam [31:0] X = 32'h41687AE1;   // 14.53
     localparam [31:0] Y = 32'h42AFD1EC;   // 87.91
 
-    // expected results (round-to-nearest, float32)
+    // 기대값 (float32)
     localparam [31:0] EXP_ADD = 32'h42CCE148;   //  102.44
     localparam [31:0] EXP_SUB = 32'hC292C290;   //  -73.38
-    localparam [31:0] EXP_MUL = 32'h449FAAA2;   // 1277.3323
-    localparam [31:0] EXP_DIV = 32'h3E293FDC;   //   0.165283
+    localparam [31:0] EXP_MUL = 32'h449FAAA2;   // 1277.33
+    localparam [31:0] EXP_DIV = 32'h3E293FDC;   //    0.165283
 
     fpu_top uut (
         .clk(clk), .rstnn(rstnn),
@@ -39,11 +29,11 @@ module tb_fpu_top;
         .var_z(var_z)
     );
 
-    // 100 MHz clock
+    // 100 MHz
     initial clk = 1'b0;
     always #5 clk = ~clk;
 
-    // ----- one operation : pulse request, wait for FSM to return idle ---
+    // 연산 1회 : request 한 사이클 주고, FSM 이 idle 로 돌아올 때까지 기다림
     task do_op;
         input [3:0]  sel;        // {fdiv,fmult,fsub,fadd}
         input [31:0] expected;
@@ -55,14 +45,13 @@ module tb_fpu_top;
             @(negedge clk);
             {request_fdiv, request_fmult, request_fsub, request_fadd} = 4'b0000;
 
-            // wait until controller finishes (back to idle), with timeout
             guard = 0;
-            @(posedge clk);                       // enter S_RUN
+            @(posedge clk);                       // S_RUN 진입
             while (uut.state !== 1'b0 && guard < 2000) begin
                 @(posedge clk);
                 guard = guard + 1;
             end
-            @(posedge clk);                       // let var_z settle
+            @(posedge clk);                       // var_z 안정화
 
             if (var_z === expected)
                 $display("  [PASS] %0s : var_z = 32'h%08X (%0d cycles)", name, var_z, guard);
@@ -74,7 +63,6 @@ module tb_fpu_top;
     endtask
 
     initial begin
-        // reset
         rstnn = 1'b0;
         var_x = X; var_y = Y;
         {request_fdiv, request_fmult, request_fsub, request_fadd} = 4'b0000;
@@ -92,11 +80,11 @@ module tb_fpu_top;
         $display("=== DONE : %0d error(s) ===", errors);
         if (errors == 0) $display("RESULT: ALL TESTS PASSED");
         else             $display("RESULT: %0d TEST(S) FAILED", errors);
-        repeat (100) @(posedge clk);   // hold last result (fdiv = 0.1653) so it stays visible in the waveform
+        repeat (100) @(posedge clk);   // 마지막 fdiv 결과(0.1653)가 파형에 남도록 잠깐 더 진행
         $finish;
     end
 
-    // global safety timeout
+    // 안전용 타임아웃
     initial begin
         #200000;
         $display("RESULT: TIMEOUT");

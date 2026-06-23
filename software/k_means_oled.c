@@ -9,11 +9,10 @@
 #include "ervp_reg_util.h"
 #include "oled_rgb.h"
 
-/* ---- FPU IP (i_test1, APB slave) register map ----
- * 0x0 : x (W/R)   0x4 : y (W/R)   0x8 : z = result (W/R)
- * 0xC : W=fadd(x+y)  R=fsub(x-y)
- * 0x10: W=fmult(x*y) R=fdiv(x/y)
- */
+/* FPU IP(i_test1) 레지스터 맵
+   0x0=x, 0x4=y, 0x8=z(결과)
+   0xC  쓰기:덧셈 / 읽기:뺄셈
+   0x10 쓰기:곱셈 / 읽기:나눗셈 */
 #define OFFSET_X     0x0
 #define OFFSET_Y     0x4
 #define OFFSET_Z     0x8
@@ -38,7 +37,7 @@ static inline void perform_fmult(void) { REG32(get_test1_addr(OFFSET_FMULT)) = 0
 static inline void perform_fsub(void)  { volatile int t = REG32(get_test1_addr(OFFSET_FSUB)); (void)t; }
 static inline void perform_fdiv(void)  { volatile int t = REG32(get_test1_addr(OFFSET_FDIV)); (void)t; }
 
-/* offload one floating-point operation to the FPU IP and read back z */
+/* x, y 넣고 연산시킨 뒤 결과 z 읽기 */
 static inline float fpu_add (float a, float b) { set_x(a); set_y(b); perform_fadd();  return get_z(); }
 static inline float fpu_sub (float a, float b) { set_x(a); set_y(b); perform_fsub();  return get_z(); }
 static inline float fpu_mult(float a, float b) { set_x(a); set_y(b); perform_fmult(); return get_z(); }
@@ -132,10 +131,10 @@ int main()
 
 					for(int l = 0; l < 2; l++)
 					{
-						// dis += sqr((float)data[i][l] - means[j][l]); offloaded to FPU
-						float diff = fpu_sub((float)data[i][l], means[j][l]); // fsub
-						float sq   = fpu_mult(diff, diff);                    // fmult
-						dis        = fpu_add(dis, sq);                        // fadd
+						// dis += (data-means)^2 를 FPU로 (뺄셈 -> 곱셈 -> 덧셈)
+						float diff = fpu_sub((float)data[i][l], means[j][l]);
+						float sq   = fpu_mult(diff, diff);
+						dis        = fpu_add(dis, sq);
 					}
 
 					if(dis < min_dis) {
@@ -164,19 +163,19 @@ int main()
 			{
 				count[group[i]]++;
 				for(int j = 0; j < 2; j++)
-					// temp[group[i]][j] += (float)data[i][j]; offloaded to FPU
-					temp[group[i]][j] = fpu_add(temp[group[i]][j], (float)data[i][j]); // fadd
+					// temp += data 를 FPU 덧셈으로
+					temp[group[i]][j] = fpu_add(temp[group[i]][j], (float)data[i][j]);
 			}
 
 			for(int i = 0; i < k; i++)
 			{
 				for(int j = 0; j < 2; j++)
 				{
-					// temp[i][j] /= count[i]; offloaded to FPU
-					temp[i][j] = fpu_div(temp[i][j], (float)count[i]); // fdiv
+					// temp /= count 를 FPU 나눗셈으로
+					temp[i][j] = fpu_div(temp[i][j], (float)count[i]);
 
-					// ABS(temp[i][j] - means[i][j]) subtraction offloaded to FPU
-					if(ABS(fpu_sub(temp[i][j], means[i][j])) > 0.0001) // fsub
+					// 수렴 판정의 뺄셈(temp-means)도 FPU로
+					if(ABS(fpu_sub(temp[i][j], means[i][j])) > 0.0001)
 					{
 						flag++;
 						means[i][j] = temp[i][j];
@@ -267,7 +266,7 @@ int main()
 				break;
 		}
 		profiling_end("K-means clustering");
-		profiling_print();		// report total tick of the clustering loop (FPU vs non-FPU 비교용)
+		profiling_print();		// 군집 루프 tick 출력 (가속 비교용)
 
 		if(full_printf) {
 			printf("\nEnd of K=means clustering! iteration : %d\n", iteration);

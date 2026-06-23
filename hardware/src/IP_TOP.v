@@ -50,14 +50,14 @@ reg request_fmult;
 reg request_fdiv;
 
 reg rpready_set;
-/* ---- FPU integration signals (filled in) ---- */
-wire [32-1:0] fpu_z;       // result from fpu_top
-wire          fpu_done;    // 1-cycle pulse when fpu_top result is ready
+/* fpu_top 연동 신호 */
+wire [32-1:0] fpu_z;       // fpu_top 결과
+wire          fpu_done;    // 결과 나온 사이클에 1
 wire          any_req  = request_fadd | request_fsub | request_fmult | request_fdiv;
 wire          op_addr  = (addr_offset==8'h C) | (addr_offset==8'h 10);
-reg           busy;        // an FPU operation is in progress
-reg           op_serviced; // op-address access already produced its result (avoid re-trigger)
-reg           fpu_req_fadd, fpu_req_fsub, fpu_req_fmult, fpu_req_fdiv; // 1-cycle start pulses
+reg           busy;        // FPU 연산 진행 중
+reg           op_serviced; // 이번 접근에서 결과를 이미 냈는지 (중복 시작 방지)
+reg           fpu_req_fadd, fpu_req_fsub, fpu_req_fmult, fpu_req_fdiv; // 1사이클 시작 펄스
 
 ////////////
 /* logics */
@@ -138,17 +138,15 @@ begin
 		var_z <= 0;
 	else if(we_z==1'b 1)
 		var_z <= rpwdata;
-	else if(fpu_done)            // FPU operation finished: capture result
+	else if(fpu_done)            // FPU 연산 끝나면 결과 저장
 		var_z <= fpu_z;
 end
 
 
 
-/* ---- start-pulse / busy control + fpu_top instance (filled in) ---- */
-// Convert the (level-held, during APB wait) request into a 1-cycle start
-// pulse for fpu_top, and keep 'busy' asserted until the result is ready.
-// op_serviced prevents re-triggering the same op while the APB access that
-// launched it is still being completed.
+/* 시작 펄스 / busy 제어 + fpu_top 인스턴스 */
+// APB wait 동안 레벨로 유지되는 request 를 1사이클 시작 펄스로 바꾸고,
+// 결과 나올 때까지 busy 유지. op_serviced 로 같은 접근에서 재시작 방지.
 always@(posedge clk, negedge rstnn)
 begin
 	if(rstnn==0)
@@ -171,12 +169,12 @@ begin
 				fpu_req_fdiv <= request_fdiv;
 			end
 			else if(!any_req)
-				op_serviced <= 0;          // access ended: re-arm for next op
+				op_serviced <= 0;          // 접근 끝나면 다음 연산 위해 리셋
 		end
 		else if(fpu_done)
 		begin
 			busy        <= 0;
-			op_serviced <= 1;              // result produced for this access
+			op_serviced <= 1;              // 이번 접근의 결과 냈음
 		end
 	end
 end
@@ -202,8 +200,8 @@ assign rpready = rpready_set;
 always@(posedge clk, negedge rstnn)
 begin
 	if(rstnn == 0) rpready_set <= 1;
-	else if(rpsel && op_addr && !op_serviced) rpready_set <= 0; // op in progress -> wait state
-	else                                      rpready_set <= 1; // ready (normal access / op done)
+	else if(rpsel && op_addr && !op_serviced) rpready_set <= 0; // 연산 중이면 wait
+	else                                      rpready_set <= 1; // 그 외에는 ready
 end
 
 always@(posedge clk, negedge rstnn)
